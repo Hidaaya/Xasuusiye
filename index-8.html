@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xasuusin Aakhiro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png">
+<style>
+  :root{--bg:#0f2027;--bg2:#203a43;--bg3:#2c5364;--card:#ffffff10;--text:#f5f5f5;--accent:#d4af37;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:'Segoe UI',Tahoma,sans-serif;
+    background:linear-gradient(135deg,var(--bg),var(--bg2),var(--bg3));color:var(--text);padding:20px;}
+  .card{max-width:560px;width:100%;background:var(--card);backdrop-filter:blur(8px);
+    border:1px solid #ffffff22;border-radius:18px;padding:32px 26px;text-align:center;
+    box-shadow:0 8px 32px #00000055;}
+  h1{margin:0 0 6px;font-size:22px;color:var(--accent);}
+  .clock{font-size:13px;opacity:.7;margin-bottom:18px;}
+  .arabic{font-size:24px;line-height:1.9;margin:16px 0;direction:rtl;}
+  .translation{font-size:16px;line-height:1.7;opacity:.9;margin-bottom:10px;}
+  .source{font-size:13px;color:var(--accent);opacity:.85;}
+  audio{width:100%;margin-top:18px;}
+  .btn{margin-top:16px;background:var(--accent);color:#1a1a1a;border:none;padding:10px 22px;
+    border-radius:30px;font-weight:600;cursor:pointer;font-size:14px;margin-right:8px;}
+  .btn.secondary{background:transparent;border:1px solid var(--accent);color:var(--accent);}
+  .status{font-size:12px;opacity:.6;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🌙 Xasuusin Aakhiro</h1>
+  <div class="clock" id="clock"></div>
+  <div class="arabic" id="arabic"></div>
+  <div class="translation" id="translation"></div>
+  <div class="source" id="source"></div>
+  <audio id="player" controls></audio>
+  <div>
+    <button class="btn" id="nextBtn">Xasuusin xigta</button>
+    <button class="btn secondary" id="enableBtn">Daar ogaysiisyada</button>
+  </div>
+  <div class="status" id="status">Ogaysiisyadu waa la damiyay — riix "Daar ogaysiisyada".</div>
+</div>
+
+<script>
+/* ===== Liiska Xasuusinta — ku dar/beddel sida aad rabto ===== */
+const reminders = [
+  { arabic:"كُلُّ نَفْسٍ ذَائِقَةُ الْمَوْتِ ۗ وَإِنَّمَا تُوَفَّوْنَ أُجُورَكُمْ يَوْمَ الْقِيَامَةِ",
+    translation:"Naf kastaa way dhadhamin doontaa geerida, oo waxaa laydinku oofin doonaa ajrigiinna Maalinta Qiyaamaha.",
+    source:"Suuratu Aali-Cimraan: 185", audio:"audio/reminder1.mp3" },
+  { arabic:"مَنْ عَمِلَ صَالِحًا مِّن ذَكَرٍ أَوْ أُنثَىٰ وَهُوَ مُؤْمِنٌ فَلَنُحْيِيَنَّهُ حَيَاةً طَيِّبَةً",
+    translation:"Qofkii camal wanaagsan fala isagoo mu'min ah, lab ama dhedig ha noqdee, waxaan siin doonaa nolol wanaagsan.",
+    source:"Suuratu An-Nahl: 97", audio:"audio/reminder2.mp3" },
+  { arabic:"أَكْثِرُوا ذِكْرَ هَاذِمِ اللَّذَّاتِ",
+    translation:"Badiya xusuusta burinta raaxooyinka (geerida).",
+    source:"Xadiith — Tirmidhi", audio:"audio/reminder3.mp3" },
+  { arabic:"مَا مِنْكُمْ مِنْ أَحَدٍ إِلَّا سَيُكَلِّمُهُ رَبُّهُ لَيْسَ بَيْنَهُ وَبَيْنَهُ تَرْجُمَانٌ",
+    translation:"Midkiinna ma jiro oo Eebbahiis aan lala hadlayn, turjumaan dhexdiisa iyo Rabbigiis ma jiro.",
+    source:"Xadiith — Bukhaari", audio:"audio/reminder4.mp3" }
+];
+
+const arabicEl=document.getElementById('arabic'), translationEl=document.getElementById('translation'),
+      sourceEl=document.getElementById('source'), clockEl=document.getElementById('clock'),
+      player=document.getElementById('player'), statusEl=document.getElementById('status');
+let currentIndex=-1, swReg=null;
+
+function pickIndexForHour(h){ return h % reminders.length; }
+
+function showReminder(index, autoplay, notify){
+  currentIndex=index;
+  const r=reminders[index];
+  arabicEl.textContent=r.arabic; translationEl.textContent=r.translation; sourceEl.textContent=r.source;
+  if(r.audio){ player.src=r.audio; player.style.display='block';
+    if(autoplay) player.play().catch(()=>{}); }
+  else { player.removeAttribute('src'); player.style.display='none'; }
+  localStorage.setItem('xasuusin_last_hour', new Date().getHours());
+
+  if(notify && swReg){
+    swReg.active && swReg.active.postMessage({type:'SHOW_REMINDER', title:'Xasuusin Aakhiro', body:r.translation});
+  }
+}
+
+function updateClock(){ clockEl.textContent=new Date().toLocaleTimeString('so-SO'); }
+
+function checkHourAndUpdate(){
+  const hour=new Date().getHours();
+  const lastHour=localStorage.getItem('xasuusin_last_hour');
+  if(lastHour===null || parseInt(lastHour,10)!==hour){
+    showReminder(pickIndexForHour(hour), true, true);
+  }
+}
+
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  showReminder((currentIndex+1)%reminders.length, true, false);
+});
+
+document.getElementById('enableBtn').addEventListener('click', async ()=>{
+  const perm = await Notification.requestPermission();
+  statusEl.textContent = perm==='granted' ? '✅ Ogaysiisyada way shaqeynayaan.' : 'Ogaysiisyada waa la diiday.';
+});
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    swReg=reg;
+    if(Notification.permission==='granted') statusEl.textContent='✅ Ogaysiisyada way shaqeynayaan.';
+  });
+}
+
+updateClock(); checkHourAndUpdate(); showReminder(pickIndexForHour(new Date().getHours()), false, false);
+setInterval(updateClock,1000);
+setInterval(checkHourAndUpdate,60000);
+</script>
+</body>
+</html>
