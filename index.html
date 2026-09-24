@@ -208,7 +208,7 @@ hadithWeightInput.addEventListener('change', ()=>{
 /* U dir Firebase settings-ka (interval + miisaanka) si Apps Script-ku isla isticmaalo */
 function fbPutSettings(){
   const w = getWeights();
-  fetch(FIREBASE_URL + '/xasuusin/settings.json', {
+  fetch(FIREBASE_URL + '/reminders/settings.json', {
     method:'PUT',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ intervalMinutes: getIntervalMinutes(), ayahWeight: w.ayah, hadithWeight: w.hadith })
@@ -256,7 +256,7 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
 
   /* Sidoo kale u dir Firebase si Apps Script-ku (saacadda dhabta ah) uu u isticmaalo xasuusintan */
   const fbKey = 'c' + Date.now();
-  fetch(FIREBASE_URL + '/xasuusin/library/' + fbKey + '.json', {
+  fetch(FIREBASE_URL + '/reminders/library/' + fbKey + '.json', {
     method:'PUT',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({type, arabic, translation, source})
@@ -333,7 +333,7 @@ function checkAndUpdate(){
 /* Hubi Firebase-ka (Apps Script-ku halkaas ayuu xasuusinta cusub ku qori doonaa) */
 async function pollFirebase(){
   try{
-    const res = await fetch(FIREBASE_URL + '/xasuusin/current.json');
+    const res = await fetch(FIREBASE_URL + '/reminders/current.json');
     if(!res.ok) throw new Error('firebase-not-ok');
     const item = await res.json();
     if(item && item.arabic && item.ts){
